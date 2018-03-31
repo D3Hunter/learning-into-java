@@ -1,4 +1,4 @@
-package io.d3hunter.javap;
+package io.d3hunter.javap.constant;
 
 import java.io.DataInputStream;
 import java.io.IOException;

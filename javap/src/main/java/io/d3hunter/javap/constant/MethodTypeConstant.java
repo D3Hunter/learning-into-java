@@ -1,4 +1,4 @@
-package io.d3hunter.javap;
+package io.d3hunter.javap.constant;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -6,11 +6,11 @@ import java.io.IOException;
 /**
  * Created by Administrator on 2018/3/29.
  */
-public class Utf8Constant implements Constant {
-    private String value;
+public class MethodTypeConstant implements Constant {
+    private int descriptorIndex;
 
     @Override
     public void read(DataInputStream stream) throws IOException {
-        value = stream.readUTF();
+        descriptorIndex = stream.readUnsignedShort();
     }
 }

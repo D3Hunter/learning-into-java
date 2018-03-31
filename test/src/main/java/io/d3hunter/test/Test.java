@@ -4,21 +4,11 @@ package io.d3hunter.test;
  * Created by jujj on 2016/11/11.
  */
 public class Test {
-    boolean field = true;
+    private final int xxx = 100000;
+    private int yyy;
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private static final Test EMPTY_MAP_FIELD = new Test();
-
-    static {
-        EMPTY_MAP_FIELD.ensureMutable();
+    public Test() {
+        yyy = zzz;
     }
-
-    private void ensureMutable() {
-        if (!field)
-            throw new UnsupportedOperationException();
-    }
-
-    public String getString() {
-        return "Hahahah, it works";
-    }
+    private final int zzz = 100020;
 }

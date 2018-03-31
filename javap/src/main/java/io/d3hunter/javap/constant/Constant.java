@@ -1,4 +1,6 @@
-package io.d3hunter.javap;
+package io.d3hunter.javap.constant;
+
+import io.d3hunter.javap.Item;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -6,7 +8,7 @@ import java.io.IOException;
 /**
  * Created by Administrator on 2018/3/29.
  */
-public interface Constant {
+public interface Constant extends Item {
     int Class = 7;
     int Fieldref = 9;
     int Methodref = 10;
@@ -22,5 +24,4 @@ public interface Constant {
     int MethodType = 16;
     int InvokeDynamic = 18;
 
-    void read(DataInputStream stream) throws IOException;
 }
