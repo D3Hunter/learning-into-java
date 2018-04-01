@@ -4,6 +4,9 @@ import io.d3hunter.javap.constant.ConstantPool;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by Administrator on 2018/3/31.
@@ -12,6 +15,41 @@ public abstract class Attribute implements Item {
     private int length;
     private int nameIndex;
     private ConstantPool constantPool;
+    private static Map<String, Constructor<?>> constructorMap = new HashMap<>();
+
+    static {
+        Class<?>[] classes = {
+                ConstantValue.class,
+                Code.class,
+                StackMapTable.class,
+                Exceptions.class,
+                InnerClasses.class,
+                EnclosingMethod.class,
+                Synthetic.class,
+                Signature.class,
+                SourceFile.class,
+                SourceDebugExtension.class,
+                LineNumberTable.class,
+                LocalVariableTable.class,
+                LocalVariableTypeTable.class,
+                Deprecated.class,
+                RuntimeVisibleAnnotations.class,
+                RuntimeInvisibleAnnotations.class,
+                RuntimeVisibleParameterAnnotations.class,
+                RuntimeInvisibleParameterAnnotations.class,
+                AnnotationDefault.class,
+                BootstrapMethods.class,
+                Unknown.class,
+        };
+        try {
+            for (int i = 0; i < classes.length; i++) {
+                Constructor<?> constructor = classes[i].getConstructor(int.class, ConstantPool.class);
+                constructorMap.put(classes[i].getSimpleName(), constructor);
+            }
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        }
+    }
 
     public Attribute(int nameIndex, ConstantPool constantPool) {
         this.nameIndex = nameIndex;
@@ -29,96 +67,19 @@ public abstract class Attribute implements Item {
         int nameIndex = stream.readUnsignedShort();
         String attributeName = constantPool.getString(nameIndex);
 
-        Attribute attribute;
-        switch (attributeName) {
-            case "ConstantValue":
-                attribute = new ConstantValue(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "Code":
-                attribute = new Code(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "StackMapTable":
-                attribute = new StackMapTable(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "Exceptions":
-                attribute = new Exceptions(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "InnerClasses":
-                attribute = new InnerClasses(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "EnclosingMethod":
-                attribute = new EnclosingMethod(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "Synthetic":
-                attribute = new Synthetic(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "Signature":
-                attribute = new Signature(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "SourceFile":
-                attribute = new SourceFile(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "SourceDebugExtension":
-                attribute = new SourceDebugExtension(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "LineNumberTable":
-                attribute = new LineNumberTable(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "LocalVariableTable":
-                attribute = new LocalVariableTable(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "LocalVariableTypeTable":
-                attribute = new LocalVariableTypeTable(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "Deprecated":
-                attribute = new Deprecated(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "RuntimeVisibleAnnotations":
-                attribute = new RuntimeVisibleAnnotations(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "RuntimeInvisibleAnnotations":
-                attribute = new RuntimeInvisibleAnnotations(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "RuntimeVisibleParameterAnnotations":
-                attribute = new RuntimeVisibleParameterAnnotations(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "RuntimeInvisibleParameterAnnotations":
-                attribute = new RuntimeInvisibleParameterAnnotations(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "AnnotationDefault":
-                attribute = new AnnotationDefault(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            case "BootstrapMethods":
-                attribute = new BootstrapMethods(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-            default:
+        try {
+            if (!constructorMap.containsKey(attributeName)) {
                 System.err.println("unknown attribute " + attributeName);
-                attribute = new Unknown(nameIndex, constantPool);
-                attribute.read(stream);
-                break;
-        }
+                attributeName = Unknown.class.getSimpleName();
+            }
 
-        return attribute;
+            Attribute attribute = (Attribute) constructorMap.get(attributeName).newInstance(nameIndex, constantPool);
+            attribute.read(stream);
+
+            return attribute;
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
     }
 
     protected abstract void read0(DataInputStream stream) throws IOException;
@@ -222,20 +183,69 @@ public abstract class Attribute implements Item {
     }
 
     private static class Exceptions extends Attribute {
+        private int numberOfExceptions;
+        private int[] exceptionIndexTable;
+
         public Exceptions(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
+        }
+
+        @Override
+        protected void read0(DataInputStream stream) throws IOException {
+            numberOfExceptions = stream.readUnsignedShort();
+            exceptionIndexTable = new int[numberOfExceptions];
+            for (int i = 0; i < numberOfExceptions; i++) {
+                exceptionIndexTable[i] = stream.readUnsignedShort();
+            }
         }
     }
 
     private static class InnerClasses extends Attribute {
+        private int numberOfClasses;
+        private InnerClassInfo[] classes;
+
         public InnerClasses(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
+        }
+
+        @Override
+        protected void read0(DataInputStream stream) throws IOException {
+            numberOfClasses = stream.readUnsignedShort();
+            classes = new InnerClassInfo[numberOfClasses];
+            for (int i = 0; i < numberOfClasses; i++) {
+                classes[i] = new InnerClassInfo();
+                classes[i].read(stream);
+            }
+        }
+
+        private class InnerClassInfo implements Item {
+            private int classInfoIndex;
+            private int outerClassInfoIndex;
+            private int nameIndex;
+            private int access;
+
+            @Override
+            public void read(DataInputStream stream) throws IOException {
+                classInfoIndex = stream.readUnsignedShort();
+                outerClassInfoIndex = stream.readUnsignedShort();
+                nameIndex = stream.readUnsignedShort();
+                access = stream.readUnsignedShort();
+            }
         }
     }
 
     private static class EnclosingMethod extends Attribute {
+        private int classIndex;
+        private int methodIndex;
+
         public EnclosingMethod(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
+        }
+
+        @Override
+        protected void read0(DataInputStream stream) throws IOException {
+            classIndex = stream.readUnsignedShort();
+            methodIndex = stream.readUnsignedShort();
         }
     }
 
@@ -243,41 +253,153 @@ public abstract class Attribute implements Item {
         public Synthetic(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
         }
+
+        @Override
+        protected void read0(DataInputStream stream) throws IOException {
+            // no item
+        }
     }
 
     private static class Signature extends Attribute {
+        private int signatureIndex;
+
         public Signature(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
+        }
+
+        @Override
+        protected void read0(DataInputStream stream) throws IOException {
+            signatureIndex = stream.readUnsignedShort();
         }
     }
 
     private static class SourceFile extends Attribute {
+        private int sourceFileIndex;
+
         public SourceFile(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
+        }
+
+        @Override
+        protected void read0(DataInputStream stream) throws IOException {
+            sourceFileIndex = stream.readUnsignedShort();
         }
     }
 
     private static class SourceDebugExtension extends Attribute {
+        private byte[] debugExtension;
+
         public SourceDebugExtension(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
+        }
+
+        @Override
+        protected void read0(DataInputStream stream) throws IOException {
+            debugExtension = new byte[getLength()];
+            int len = stream.read(debugExtension);
+            assert len == getLength();
         }
     }
 
     private static class LineNumberTable extends Attribute {
+        private int tableLength;
+        private Table[] table;
+
         public LineNumberTable(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
+        }
+
+        @Override
+        protected void read0(DataInputStream stream) throws IOException {
+            tableLength = stream.readUnsignedShort();
+            table = new Table[tableLength];
+            for (int i = 0; i < tableLength; i++) {
+                table[i] = new Table();
+                table[i].read(stream);
+            }
+        }
+
+        private class Table implements Item {
+            private int startPc;
+            private int lineNum;
+
+            @Override
+            public void read(DataInputStream stream) throws IOException {
+                startPc = stream.readUnsignedShort();
+                lineNum = stream.readUnsignedShort();
+            }
         }
     }
 
     private static class LocalVariableTable extends Attribute {
+        private int tableLength;
+        private Table[] table;
+
         public LocalVariableTable(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
+        }
+
+        @Override
+        protected void read0(DataInputStream stream) throws IOException {
+            tableLength = stream.readUnsignedShort();
+            table = new Table[tableLength];
+            for (int i = 0; i < tableLength; i++) {
+                table[i] = new Table();
+                table[i].read(stream);
+            }
+        }
+
+        private class Table implements Item {
+            private int startPc;
+            private int length;
+            private int nameIndex;
+            private int descriptorIndex;
+            private int index;
+
+            @Override
+            public void read(DataInputStream stream) throws IOException {
+                startPc = stream.readUnsignedShort();
+                length = stream.readUnsignedShort();
+                nameIndex = stream.readUnsignedShort();
+                descriptorIndex = stream.readUnsignedShort();
+                index = stream.readUnsignedShort();
+            }
         }
     }
 
     private static class LocalVariableTypeTable extends Attribute {
+        private int tableLength;
+        private Table[] table;
+
         public LocalVariableTypeTable(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
+        }
+
+        @Override
+        protected void read0(DataInputStream stream) throws IOException {
+            tableLength = stream.readUnsignedShort();
+            table = new Table[tableLength];
+            for (int i = 0; i < tableLength; i++) {
+                table[i] = new Table();
+                table[i].read(stream);
+            }
+        }
+
+        private class Table implements Item {
+            private int startPc;
+            private int length;
+            private int nameIndex;
+            private int signatureIndex;
+            private int index;
+
+            @Override
+            public void read(DataInputStream stream) throws IOException {
+                startPc = stream.readUnsignedShort();
+                length = stream.readUnsignedShort();
+                nameIndex = stream.readUnsignedShort();
+                signatureIndex = stream.readUnsignedShort();
+                index = stream.readUnsignedShort();
+            }
         }
     }
 
@@ -289,7 +411,7 @@ public abstract class Attribute implements Item {
 
         @Override
         protected void read0(DataInputStream stream) throws IOException {
-
+            // empty
         }
     }
 
@@ -297,11 +419,21 @@ public abstract class Attribute implements Item {
         public RuntimeVisibleAnnotations(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
         }
+
+        @Override
+        protected void read0(DataInputStream stream) throws IOException {
+
+        }
     }
 
     private static class RuntimeInvisibleAnnotations extends Attribute {
         public RuntimeInvisibleAnnotations(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
+        }
+
+        @Override
+        protected void read0(DataInputStream stream) throws IOException {
+
         }
     }
 
@@ -309,11 +441,21 @@ public abstract class Attribute implements Item {
         public RuntimeVisibleParameterAnnotations(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
         }
+
+        @Override
+        protected void read0(DataInputStream stream) throws IOException {
+
+        }
     }
 
     private static class RuntimeInvisibleParameterAnnotations extends Attribute {
         public RuntimeInvisibleParameterAnnotations(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
+        }
+
+        @Override
+        protected void read0(DataInputStream stream) throws IOException {
+
         }
     }
 
@@ -321,11 +463,21 @@ public abstract class Attribute implements Item {
         public AnnotationDefault(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
         }
+
+        @Override
+        protected void read0(DataInputStream stream) throws IOException {
+
+        }
     }
 
     private static class BootstrapMethods extends Attribute {
         public BootstrapMethods(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
+        }
+
+        @Override
+        protected void read0(DataInputStream stream) throws IOException {
+
         }
     }
 
