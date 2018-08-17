@@ -9,7 +9,15 @@ class SimpleLexer {
         this.expression = expression;
     }
 
+    public Token peekToken() {
+        return getToken(true);
+    }
+
     public Token nextToken() {
+        return getToken(false);
+    }
+
+    private Token getToken(boolean peek) {
         while (currPos < expression.length() && expression.charAt(currPos) == ' ') {
             currPos++;
         }
@@ -17,24 +25,28 @@ class SimpleLexer {
             return null;
         }
         char c = expression.charAt(currPos);
-        if (c == '+' || c == '-' || c == '*' || c == '/') {
-            currPos += 1;
-            value = c;
-            return Token.getOperator(c);
-        } else if (c == '(') {
-            currPos += 1;
-            return Token.LEFT_BRACKET;
-        } else if (c == ')') {
-            currPos += 1;
-            return Token.RIGHT_BRACKET;
-        } else if (Character.isDigit(c)) {
-            int end = currPos;
-            while (end < expression.length() && Character.isDigit(expression.charAt(end))) {
-                end++;
+        int delta = 1;
+        try {
+            if (c == '+' || c == '-' || c == '*' || c == '/') {
+                value = c;
+                return Token.getOperator(c);
+            } else if (c == '(') {
+                return Token.LEFT_BRACKET;
+            } else if (c == ')') {
+                return Token.RIGHT_BRACKET;
+            } else if (Character.isDigit(c)) {
+                int end = currPos;
+                while (end < expression.length() && Character.isDigit(expression.charAt(end))) {
+                    end++;
+                }
+                value = Integer.valueOf(expression.substring(currPos, end));
+                delta = end - currPos;
+                return Token.NUMBER;
             }
-            value = Integer.valueOf(expression.substring(currPos, end));
-            currPos = end;
-            return Token.NUMBER;
+        } finally {
+            if (!peek) {
+                currPos += delta;
+            }
         }
         throw new RuntimeException("cannot parse char " + c);
     }
