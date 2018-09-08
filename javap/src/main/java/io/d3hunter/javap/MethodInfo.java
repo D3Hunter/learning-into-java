@@ -6,16 +6,16 @@ import java.io.DataInputStream;
 import java.io.IOException;
 
 /**
- * Created by Administrator on 2018/3/31.
+ * Created by Administrator on 2018/9/8.
  */
-public class FieldInfo extends ConstantPoolReliedItem {
+public class MethodInfo extends ConstantPoolReliedItem {
     private int access;
     private int nameIndex;
     private int descriptorIndex;
     private int attributeCount;
     private Attribute[] attributes;
 
-    public FieldInfo(ConstantPool constantPool) {
+    public MethodInfo(ConstantPool constantPool) {
         super(constantPool);
     }
 

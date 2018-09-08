@@ -33,19 +33,22 @@ public abstract class Attribute implements Item {
                 LocalVariableTable.class,
                 LocalVariableTypeTable.class,
                 Deprecated.class,
-                RuntimeVisibleAnnotations.class,
-                RuntimeInvisibleAnnotations.class,
-                RuntimeVisibleParameterAnnotations.class,
-                RuntimeInvisibleParameterAnnotations.class,
                 AnnotationDefault.class,
                 BootstrapMethods.class,
                 Unknown.class,
         };
         try {
-            for (int i = 0; i < classes.length; i++) {
-                Constructor<?> constructor = classes[i].getConstructor(int.class, ConstantPool.class);
-                constructorMap.put(classes[i].getSimpleName(), constructor);
+            for (Class<?> klass : classes) {
+                Constructor<?> constructor = klass.getConstructor(int.class, ConstantPool.class);
+                constructorMap.put(klass.getSimpleName(), constructor);
             }
+            Constructor<RuntimeAnnotations> constructor = RuntimeAnnotations.class.getConstructor(int.class, ConstantPool.class);
+            constructorMap.put("RuntimeVisibleAnnotations", constructor);
+            constructorMap.put("RuntimeInvisibleAnnotations", constructor);
+
+            Constructor<RuntimeParameterAnnotations> paraConstructor = RuntimeParameterAnnotations.class.getConstructor(int.class, ConstantPool.class);
+            constructorMap.put("RuntimeVisibleParameterAnnotations", paraConstructor);
+            constructorMap.put("RuntimeInvisibleParameterAnnotations", paraConstructor);
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         }
@@ -415,69 +418,171 @@ public abstract class Attribute implements Item {
         }
     }
 
-    private static class RuntimeVisibleAnnotations extends Attribute {
-        public RuntimeVisibleAnnotations(int nameIndex, ConstantPool constantPool) {
-            super(nameIndex, constantPool);
-        }
+    private static class Annotation implements Item {
+        private int typeIndex;
+        private int numElementValuePairs;
+        private ElementValuePair[] elementValuePairs;
 
         @Override
-        protected void read0(DataInputStream stream) throws IOException {
+        public void read(DataInputStream stream) throws IOException {
+            this.typeIndex = stream.readUnsignedShort();
+            this.numElementValuePairs = stream.readUnsignedShort();
+            this.elementValuePairs = new ElementValuePair[this.numElementValuePairs];
+            for (int i = 0; i < this.numElementValuePairs; i++) {
+                this.elementValuePairs[i] = new ElementValuePair();
+                this.elementValuePairs[i].read(stream);
+            }
+        }
 
+        private static class ElementValuePair implements Item {
+            private int elementNameIndex;
+            private ElementValue elementValue;
+
+            @Override
+            public void read(DataInputStream stream) throws IOException {
+                elementNameIndex = stream.readUnsignedShort();
+                elementValue = new ElementValue();
+                elementValue.read(stream);
+            }
+        }
+
+    }
+
+    private static class ElementValue implements Item {
+
+        private int tag;
+        private int constValueIndex;
+        private int typeNameIndex;
+        private int constNameIndex;
+        private int classInfoIndex;
+        private Annotation annotation;
+        private int numValues;
+        private ElementValue[] values;
+
+        @Override
+        public void read(DataInputStream stream) throws IOException {
+            this.tag = stream.readUnsignedByte();
+
+            if (tag == 'B' || tag == 'C' || tag == 'D' || tag == 'F' || tag == 'I'
+                    || tag == 'J' || tag == 'S' || tag == 'Z' || tag == 's') {
+                constValueIndex = stream.readUnsignedShort();
+            } else if (tag == 'e') {
+                typeNameIndex = stream.readUnsignedShort();
+                constNameIndex = stream.readUnsignedShort();
+            } else if (tag == 'c') {
+                classInfoIndex = stream.readUnsignedShort();
+            } else if (tag == '@') {
+                annotation = new Annotation();
+                annotation.read(stream);
+            } else if (tag == '[') {
+                numValues = stream.readUnsignedShort();
+                values = new ElementValue[numValues];
+                for (int i = 0; i < numValues; i++) {
+                    values[i] = new ElementValue();
+                    values[i].read(stream);
+                }
+            }
         }
     }
 
-    private static class RuntimeInvisibleAnnotations extends Attribute {
-        public RuntimeInvisibleAnnotations(int nameIndex, ConstantPool constantPool) {
+    private static class RuntimeAnnotations extends Attribute {
+        private int numAnnotations;
+        private Annotation[] annotations;
+
+        public RuntimeAnnotations(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
         }
 
         @Override
         protected void read0(DataInputStream stream) throws IOException {
-
+            this.numAnnotations = stream.readUnsignedShort();
+            this.annotations = new Annotation[this.numAnnotations];
+            for (int i = 0; i < this.numAnnotations; i++) {
+                this.annotations[i] = new Annotation();
+                this.annotations[i].read(stream);
+            }
         }
     }
 
-    private static class RuntimeVisibleParameterAnnotations extends Attribute {
-        public RuntimeVisibleParameterAnnotations(int nameIndex, ConstantPool constantPool) {
+    private static class RuntimeParameterAnnotations extends Attribute {
+        private int numParameters;
+
+        public RuntimeParameterAnnotations(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
         }
 
         @Override
         protected void read0(DataInputStream stream) throws IOException {
-
+            numParameters = stream.readUnsignedShort();
+            ParameterAnnotation[] parameterAnnotationses = new ParameterAnnotation[numParameters];
+            for (int i = 0; i < numParameters; i++) {
+                parameterAnnotationses[i] = new ParameterAnnotation();
+                parameterAnnotationses[i].read(stream);
+            }
         }
-    }
 
-    private static class RuntimeInvisibleParameterAnnotations extends Attribute {
-        public RuntimeInvisibleParameterAnnotations(int nameIndex, ConstantPool constantPool) {
-            super(nameIndex, constantPool);
-        }
+        private static class ParameterAnnotation implements Item {
+            private int numAnnotations;
+            private Annotation[] annotations;
 
-        @Override
-        protected void read0(DataInputStream stream) throws IOException {
-
+            @Override
+            public void read(DataInputStream stream) throws IOException {
+                numAnnotations = stream.readUnsignedShort();
+                annotations = new Annotation[numAnnotations];
+                for (int i = 0; i < numAnnotations; i++) {
+                    annotations[i] = new Annotation();
+                    annotations[i].read(stream);
+                }
+            }
         }
     }
 
     private static class AnnotationDefault extends Attribute {
+        private ElementValue elementValue;
+
         public AnnotationDefault(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
         }
 
         @Override
         protected void read0(DataInputStream stream) throws IOException {
-
+            elementValue = new ElementValue();
+            elementValue.read(stream);
         }
     }
 
     private static class BootstrapMethods extends Attribute {
+        private int numBootstrapMethods;
+        private BootstrapMethod[] bootstrapMethods;
+
         public BootstrapMethods(int nameIndex, ConstantPool constantPool) {
             super(nameIndex, constantPool);
         }
 
         @Override
         protected void read0(DataInputStream stream) throws IOException {
+            numBootstrapMethods = stream.readUnsignedShort();
+            bootstrapMethods = new BootstrapMethod[numBootstrapMethods];
+            for (int i = 0; i < numBootstrapMethods; i++) {
+                bootstrapMethods[i] = new BootstrapMethod();
+                bootstrapMethods[i].read(stream);
+            }
+        }
 
+        private static class BootstrapMethod implements Item {
+            private int bootstrapMethodRef;
+            private int numBootstrapArguments;
+            private int[] bootstrapArguments;
+
+            @Override
+            public void read(DataInputStream stream) throws IOException {
+                bootstrapMethodRef = stream.readUnsignedShort();
+                numBootstrapArguments = stream.readUnsignedShort();
+                bootstrapArguments = new int[numBootstrapArguments];
+                for (int i = 0; i < numBootstrapArguments; i++) {
+                    bootstrapArguments[i] = stream.readUnsignedShort();
+                }
+            }
         }
     }
 
