@@ -5,11 +5,12 @@ import io.d3hunter.javap.constant.*;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Created by Administrator on 2018/3/6.
  */
-public class ClassFileReader {
+public class ClassFileReader implements Item {
     private int magic;
     private int minor;
     private int major;
@@ -22,10 +23,12 @@ public class ClassFileReader {
     private int fieldsCount;
     private int methodsCount;
     private int attributesCount;
+    private FieldInfo[] fields;
+    private MethodInfo[] methods;
+    private Attribute[] attributes;
 
-    public void read() throws Exception {
-        DataInputStream stream = new DataInputStream(new BufferedInputStream(ClassFileReader.class.getResourceAsStream("ClassFileReader$A.class")));
-
+    @Override
+    public void read(DataInputStream stream) throws IOException {
         this.magic = stream.readInt();
         this.minor = stream.readUnsignedShort();
         this.major = stream.readUnsignedShort();
@@ -33,6 +36,7 @@ public class ClassFileReader {
         this.constantPool = new DefaultConstantPool();
         this.constantPool.read(stream);
 
+        // basic class info
         this.access = stream.readUnsignedShort();
         this.thisClassIndex = stream.readUnsignedShort();
         this.superClassIndex = stream.readUnsignedShort();
@@ -41,15 +45,35 @@ public class ClassFileReader {
         for (int i = 0; i < interfacesCount; i++) {
             interfaceIndices[i] = stream.readUnsignedShort();
         }
-        this.fieldsCount = stream.readUnsignedShort();
+
         // fields
-        this.methodsCount = stream.readUnsignedShort();
+        this.fieldsCount = stream.readUnsignedShort();
+        this.fields = new FieldInfo[fieldsCount];
+        for (int i = 0; i < fieldsCount; i++) {
+            fields[i] = new FieldInfo(constantPool);
+            fields[i].read(stream);
+        }
+
         // methods
-        this.attributesCount = stream.readUnsignedShort();
+        this.methodsCount = stream.readUnsignedShort();
+        this.methods = new MethodInfo[fieldsCount];
+        for (int i = 0; i < fieldsCount; i++) {
+            methods[i] = new MethodInfo(constantPool);
+            methods[i].read(stream);
+        }
+
         // attributes
+        this.attributesCount = stream.readUnsignedShort();
+        this.attributes = new Attribute[fieldsCount];
+        for (int i = 0; i < fieldsCount; i++) {
+            attributes[i] = Attribute.readFrom(stream, constantPool);
+        }
     }
 
-    protected static class A {
-
+    public static void main(String[] args) throws Exception {
+        InputStream inputStream = ClassFileReader.class.getResourceAsStream("ClassFileReader$A.class");
+        DataInputStream stream = new DataInputStream(new BufferedInputStream(inputStream));
+        ClassFileReader classFileReader = new ClassFileReader();
+        classFileReader.read(stream);
     }
 }
