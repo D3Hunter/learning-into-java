@@ -10,9 +10,7 @@ public class StackMapFrame implements Item {
     private int type;
     private FrameType typeEnum;
     private int offsetDelta;
-    private int numberOfLocals;
     private VerificationTypeInfo[] locals;
-    private int numberOfStackItems;
     private VerificationTypeInfo[] stack;
 
     @Override
@@ -21,15 +19,15 @@ public class StackMapFrame implements Item {
         StackMapFrame frame;
         if (0 <= type && type <= 63) {
             typeEnum = FrameType.SAME_FRAME;
+            offsetDelta = type;
         } else if (64 <= type && type <= 127) {
             typeEnum = FrameType.SAME_LOCALS_1_STACK_ITEM_FRAME;
-            numberOfStackItems = 1;
-            stack = readVerificationTypeInfos(numberOfStackItems, stream);
+            offsetDelta = type - 64;
+            stack = readVerificationTypeInfos(1, stream);
         } else if (type == 247) {
             typeEnum = FrameType.SAME_LOCALS_1_STACK_ITEM_FRAME_EXTENDED;
             offsetDelta = stream.readUnsignedShort();
-            numberOfStackItems = 1;
-            stack = readVerificationTypeInfos(numberOfStackItems, stream);
+            stack = readVerificationTypeInfos(1, stream);
         } else if (248 <= type && type <= 250) {
             typeEnum = FrameType.CHOP_FRAME;
             offsetDelta = stream.readUnsignedShort();
@@ -39,14 +37,13 @@ public class StackMapFrame implements Item {
         } else if (252 <= type && type <= 254) {
             typeEnum = FrameType.APPEND_FRAME;
             offsetDelta = stream.readUnsignedShort();
-            numberOfLocals = type - 251;
-            locals = readVerificationTypeInfos(numberOfLocals, stream);
+            locals = readVerificationTypeInfos(type - 251, stream);
         } else if (type == 255) {
             typeEnum = FrameType.FULL_FRAME;
             offsetDelta = stream.readUnsignedShort();
-            numberOfLocals = stream.readUnsignedShort();
+            int numberOfLocals = stream.readUnsignedShort();
             locals = readVerificationTypeInfos(numberOfLocals, stream);
-            numberOfStackItems = stream.readUnsignedShort();
+            int numberOfStackItems = stream.readUnsignedShort();
             stack = readVerificationTypeInfos(numberOfStackItems, stream);
         } else {
             throw new IOException("invalid frame type");

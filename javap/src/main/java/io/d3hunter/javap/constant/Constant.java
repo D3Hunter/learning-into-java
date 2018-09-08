@@ -24,4 +24,5 @@ public interface Constant extends Item {
     int MethodType = 16;
     int InvokeDynamic = 18;
 
+    String getContent();
 }
