@@ -44,7 +44,7 @@ public class DefaultConstantPool implements ConstantPool {
 
     @Override
     public void read(DataInputStream stream) throws IOException {
-
+        constantPoolCount = stream.readUnsignedShort();
         this.constants = new Constant[constantPoolCount];
         readConstantPool(stream);
     }
@@ -61,14 +61,14 @@ public class DefaultConstantPool implements ConstantPool {
     private Constant createConstant(int tag) throws IOException {
         Class<? extends Constant> klass = CONSTANT_TYPES.get(tag);
         if (klass == null) {
-            throw new IOException("unrecongenized constant tag" + tag);
+            throw new IOException("unrecongenized constant tag " + tag);
         }
 
         try {
             Constructor<? extends Constant> constructor = klass.getConstructor(ConstantPool.class, int.class);
             return constructor.newInstance(this, tag);
         } catch (Exception e) {
-            throw new IOException("unrecongenized constant tag" + tag, e);
+            throw new IOException("unrecongenized constant tag " + tag, e);
         }
     }
 
@@ -87,8 +87,20 @@ public class DefaultConstantPool implements ConstantPool {
         }
     }
 
+    private static class ClassConstant extends AbstractConstant {
+        private int nameIndex;
 
-    public class DoubleConstant extends AbstractConstant {
+        public ClassConstant(ConstantPool constantPool, int tag) {
+            super(constantPool, tag);
+        }
+
+        @Override
+        public void read(DataInputStream stream) throws IOException {
+            nameIndex = stream.readUnsignedShort();
+        }
+    }
+
+    private static class DoubleConstant extends AbstractConstant {
         private double value;
 
         public DoubleConstant(ConstantPool constantPool, int tag) {
@@ -101,7 +113,7 @@ public class DefaultConstantPool implements ConstantPool {
         }
     }
 
-    public class FieldMethodRefConstant extends AbstractConstant {
+    private static class FieldMethodRefConstant extends AbstractConstant {
         private int classIndex;
         private int nameAndTypeIndex;
 
@@ -116,7 +128,7 @@ public class DefaultConstantPool implements ConstantPool {
         }
     }
 
-    public class FloatConstant extends AbstractConstant {
+    private static class FloatConstant extends AbstractConstant {
         private float value;
 
         public FloatConstant(ConstantPool constantPool, int tag) {
@@ -129,7 +141,7 @@ public class DefaultConstantPool implements ConstantPool {
         }
     }
 
-    public class IntegerConstant extends AbstractConstant {
+    private static class IntegerConstant extends AbstractConstant {
         private int value;
 
         public IntegerConstant(ConstantPool constantPool, int tag) {
@@ -142,7 +154,7 @@ public class DefaultConstantPool implements ConstantPool {
         }
     }
 
-    public class InvokeDynamicConstant extends AbstractConstant {
+    private static class InvokeDynamicConstant extends AbstractConstant {
         private int nameAndTypeIndex;
         private int bootstrapMethodAttrIndex;
 
@@ -157,7 +169,7 @@ public class DefaultConstantPool implements ConstantPool {
         }
     }
 
-    public class LongConstant extends AbstractConstant {
+    private static class LongConstant extends AbstractConstant {
         private long value;
 
         public LongConstant(ConstantPool constantPool, int tag) {
@@ -170,7 +182,7 @@ public class DefaultConstantPool implements ConstantPool {
         }
     }
 
-    public class MethodHandleConstant extends AbstractConstant {
+    private static class MethodHandleConstant extends AbstractConstant {
         private int referenceIndex;
         private byte referenceKind;
 
@@ -185,7 +197,7 @@ public class DefaultConstantPool implements ConstantPool {
         }
     }
 
-    public class MethodTypeConstant extends AbstractConstant {
+    private static class MethodTypeConstant extends AbstractConstant {
         private int descriptorIndex;
 
         public MethodTypeConstant(ConstantPool constantPool, int tag) {
@@ -198,7 +210,7 @@ public class DefaultConstantPool implements ConstantPool {
         }
     }
 
-    public class StringConstant extends AbstractConstant {
+    private static class StringConstant extends AbstractConstant {
         private int stringIndex;
 
         public StringConstant(ConstantPool constantPool, int tag) {
@@ -211,7 +223,7 @@ public class DefaultConstantPool implements ConstantPool {
         }
     }
 
-    public class Utf8Constant extends AbstractConstant {
+    private static class Utf8Constant extends AbstractConstant {
         private String value;
 
         public Utf8Constant(ConstantPool constantPool, int tag) {
@@ -222,9 +234,14 @@ public class DefaultConstantPool implements ConstantPool {
         public void read(DataInputStream stream) throws IOException {
             value = stream.readUTF();
         }
+
+        @Override
+        public String getContent() {
+            return value;
+        }
     }
 
-    public class NameAndTypeConstant extends AbstractConstant {
+    private static class NameAndTypeConstant extends AbstractConstant {
         private int nameIndex;
         private int descriptorIndex;
 

@@ -61,7 +61,6 @@ public abstract class Attribute implements Item {
 
     @Override
     public void read(DataInputStream stream) throws IOException {
-        nameIndex = stream.readUnsignedShort();
         length = stream.readInt();
         read0(stream);
     }

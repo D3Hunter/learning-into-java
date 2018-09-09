@@ -57,7 +57,7 @@ public class ClassFileReader implements Item {
         // methods
         this.methodsCount = stream.readUnsignedShort();
         this.methods = new MethodInfo[fieldsCount];
-        for (int i = 0; i < fieldsCount; i++) {
+        for (int i = 0; i < methodsCount; i++) {
             methods[i] = new MethodInfo(constantPool);
             methods[i].read(stream);
         }
@@ -65,13 +65,13 @@ public class ClassFileReader implements Item {
         // attributes
         this.attributesCount = stream.readUnsignedShort();
         this.attributes = new Attribute[fieldsCount];
-        for (int i = 0; i < fieldsCount; i++) {
+        for (int i = 0; i < attributesCount; i++) {
             attributes[i] = Attribute.readFrom(stream, constantPool);
         }
     }
 
     public static void main(String[] args) throws Exception {
-        InputStream inputStream = ClassFileReader.class.getResourceAsStream("ClassFileReader$A.class");
+        InputStream inputStream = ClassFileReader.class.getResourceAsStream("MethodInfo.class");
         DataInputStream stream = new DataInputStream(new BufferedInputStream(inputStream));
         ClassFileReader classFileReader = new ClassFileReader();
         classFileReader.read(stream);
