@@ -35,9 +35,9 @@ public class DefaultConstantPool implements ConstantPool {
 
 
     @Override
-    public String getString(int index) throws IOException{
+    public String getString(int index) {
         if (index <= 0 || index >= constantPoolCount) {
-            throw new IOException("invalid constant pool index");
+            throw new IndexOutOfBoundsException("invalid constant pool index");
         }
         return constants[index].getContent();
     }
@@ -82,8 +82,8 @@ public class DefaultConstantPool implements ConstantPool {
         }
 
         @Override
-        public String getContent() {
-            return "";
+        public String toString() {
+            return getContent();
         }
     }
 
@@ -98,6 +98,11 @@ public class DefaultConstantPool implements ConstantPool {
         public void read(DataInputStream stream) throws IOException {
             nameIndex = stream.readUnsignedShort();
         }
+
+        @Override
+        public String getContent() {
+            return constantPool.getString(nameIndex);
+        }
     }
 
     private static class DoubleConstant extends AbstractConstant {
@@ -110,6 +115,11 @@ public class DefaultConstantPool implements ConstantPool {
         @Override
         public void read(DataInputStream stream) throws IOException {
             value = java.lang.Double.longBitsToDouble(stream.readLong());
+        }
+
+        @Override
+        public String getContent() {
+            return java.lang.Double.toString(value);
         }
     }
 
@@ -126,6 +136,11 @@ public class DefaultConstantPool implements ConstantPool {
             classIndex = stream.readUnsignedShort();
             nameAndTypeIndex = stream.readUnsignedShort();
         }
+
+        @Override
+        public String getContent() {
+            return constantPool.getString(classIndex) + " " + constantPool.getString(nameAndTypeIndex);
+        }
     }
 
     private static class FloatConstant extends AbstractConstant {
@@ -139,6 +154,11 @@ public class DefaultConstantPool implements ConstantPool {
         public void read(DataInputStream stream) throws IOException {
             value = java.lang.Float.intBitsToFloat(stream.readInt());
         }
+
+        @Override
+        public String getContent() {
+            return java.lang.Float.toString(value);
+        }
     }
 
     private static class IntegerConstant extends AbstractConstant {
@@ -151,6 +171,11 @@ public class DefaultConstantPool implements ConstantPool {
         @Override
         public void read(DataInputStream stream) throws IOException {
             value = stream.readInt();
+        }
+
+        @Override
+        public String getContent() {
+            return java.lang.Integer.toString(value);
         }
     }
 
@@ -167,6 +192,11 @@ public class DefaultConstantPool implements ConstantPool {
             bootstrapMethodAttrIndex = stream.readUnsignedShort();
             nameAndTypeIndex = stream.readUnsignedShort();
         }
+
+        @Override
+        public String getContent() {
+            return constantPool.getString(nameAndTypeIndex);
+        }
     }
 
     private static class LongConstant extends AbstractConstant {
@@ -179,6 +209,11 @@ public class DefaultConstantPool implements ConstantPool {
         @Override
         public void read(DataInputStream stream) throws IOException {
             value = stream.readLong();
+        }
+
+        @Override
+        public String getContent() {
+            return java.lang.Long.toString(value);
         }
     }
 
@@ -195,6 +230,11 @@ public class DefaultConstantPool implements ConstantPool {
             referenceKind = stream.readByte();
             referenceIndex = stream.readUnsignedShort();
         }
+
+        @Override
+        public String getContent() {
+            return constantPool.getString(referenceIndex);
+        }
     }
 
     private static class MethodTypeConstant extends AbstractConstant {
@@ -208,6 +248,11 @@ public class DefaultConstantPool implements ConstantPool {
         public void read(DataInputStream stream) throws IOException {
             descriptorIndex = stream.readUnsignedShort();
         }
+
+        @Override
+        public String getContent() {
+            return constantPool.getString(descriptorIndex);
+        }
     }
 
     private static class StringConstant extends AbstractConstant {
@@ -220,6 +265,11 @@ public class DefaultConstantPool implements ConstantPool {
         @Override
         public void read(DataInputStream stream) throws IOException {
             stringIndex = stream.readUnsignedShort();
+        }
+
+        @Override
+        public String getContent() {
+            return constantPool.getString(stringIndex);
         }
     }
 
@@ -253,6 +303,11 @@ public class DefaultConstantPool implements ConstantPool {
         public void read(DataInputStream stream) throws IOException {
             nameIndex = stream.readUnsignedShort();
             descriptorIndex = stream.readUnsignedShort();
+        }
+
+        @Override
+        public String getContent() {
+            return constantPool.getString(nameIndex) + " " + constantPool.getString(descriptorIndex);
         }
     }
 

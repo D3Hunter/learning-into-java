@@ -233,6 +233,20 @@ public abstract class Attribute implements Item {
                 nameIndex = stream.readUnsignedShort();
                 access = stream.readUnsignedShort();
             }
+
+            @Override
+            public String toString() {
+                ConstantPool constantPool = getConstantPool();
+                String className = "anonymous";
+                if (nameIndex != 0) {
+                    className = constantPool.getString(nameIndex);
+                }
+                String outerClassInfo = "no outer class";
+                if (outerClassInfoIndex != 0) {
+                    outerClassInfo = constantPool.getString(outerClassInfoIndex);
+                }
+                return className + "(outer: " + outerClassInfo + ")";
+            }
         }
     }
 

@@ -30,4 +30,13 @@ public class MethodInfo extends ConstantPoolReliedItem {
             attributes[i] = Attribute.readFrom(stream, constantPool);
         }
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(AccessFlags.getMethodAccessFlags(access)).append(" ")
+                .append(constantPool.getString(nameIndex)).append(": ")
+                .append(constantPool.getString(descriptorIndex));
+        return sb.toString().trim();
+    }
 }

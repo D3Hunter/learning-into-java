@@ -56,7 +56,7 @@ public class ClassFileReader implements Item {
 
         // methods
         this.methodsCount = stream.readUnsignedShort();
-        this.methods = new MethodInfo[fieldsCount];
+        this.methods = new MethodInfo[methodsCount];
         for (int i = 0; i < methodsCount; i++) {
             methods[i] = new MethodInfo(constantPool);
             methods[i].read(stream);
@@ -64,16 +64,41 @@ public class ClassFileReader implements Item {
 
         // attributes
         this.attributesCount = stream.readUnsignedShort();
-        this.attributes = new Attribute[fieldsCount];
+        this.attributes = new Attribute[attributesCount];
         for (int i = 0; i < attributesCount; i++) {
             attributes[i] = Attribute.readFrom(stream, constantPool);
         }
     }
 
+    public void print() {
+        stdoutPrintln("magic 0x%X", this.magic);
+        stdoutPrintln("file version: %d.%d", this.major, this.minor);
+        stdoutPrintln("access flags: %s", AccessFlags.getClassAccessFlags(this.access));
+        stdoutPrintln("super class: %s", constantPool.getString(this.superClassIndex));
+        stdoutPrintln("number of direct interfaces: %d", interfacesCount);
+        for (int interfaceIndex : interfaceIndices) {
+            stdoutPrintln("    %s", constantPool.getString(interfaceIndex));
+        }
+        stdoutPrintln("number of fields: %s", fieldsCount);
+        for (FieldInfo field : fields) {
+            stdoutPrintln("    %s", field);
+        }
+        stdoutPrintln("number of methods: %d", methodsCount);
+        for (MethodInfo method : methods) {
+            stdoutPrintln("    %s", method);
+        }
+    }
+
+    private static void stdoutPrintln(String format, Object... arguments) {
+        System.out.print(String.format(format, arguments));
+        System.out.println();
+    }
+
     public static void main(String[] args) throws Exception {
-        InputStream inputStream = ClassFileReader.class.getResourceAsStream("MethodInfo.class");
+        InputStream inputStream = ClassFileReader.class.getResourceAsStream("constant/DefaultConstantPool.class");
         DataInputStream stream = new DataInputStream(new BufferedInputStream(inputStream));
         ClassFileReader classFileReader = new ClassFileReader();
         classFileReader.read(stream);
+        classFileReader.print();
     }
 }

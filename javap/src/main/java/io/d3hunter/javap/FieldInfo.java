@@ -30,4 +30,13 @@ public class FieldInfo extends ConstantPoolReliedItem {
             attributes[i] = Attribute.readFrom(stream, constantPool);
         }
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(AccessFlags.getFieldAccessFlags(access)).append(" ")
+                .append(constantPool.getString(nameIndex)).append(": ")
+                .append(constantPool.getString(descriptorIndex));
+        return sb.toString().trim();
+    }
 }
